@@ -27,7 +27,7 @@ class db ():
         cursor.execute("CREATE TABLE link (id serial primary key, in_switch text, in_port text, out_switch text, out_port text);")
         cursor.execute("CREATE TABLE switch (id serial primary key, switch text, port text);")
         cursor.execute("CREATE TABLE host (id serial primary key, host_id text, switch text, port text);")
-        #conn.commit()
+        
         
         # Listen to dependencies
         def startup ():
