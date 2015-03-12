@@ -1,7 +1,7 @@
-'''
-    This module monitors switch, link, and host status and store the network state into a database
-    Call it with POX ./pox.py pox.openflow.discovery pox.samples.pretty_log pox.forwarding.l3_learning pox.host_tracker db'''
-
+"""
+This module monitors switch, link, and host status and store the network state into the database.
+To run, use ./pox.py pox.openflow.discovery pox.samples.pretty_log pox.forwarding.l3_learning pox.host_tracker db
+"""
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
@@ -26,7 +26,7 @@ class db ():
         log.info("Connected to Database!\n")
         cursor.execute("CREATE TABLE link (id serial primary key, in_switch text, in_port text, out_switch text, out_port text);")
         cursor.execute("CREATE TABLE switch (id serial primary key, switch text, port text);")
-        cursor.execute("CREATE TABLE host (id serial primary key, switch text, port text);")
+        cursor.execute("CREATE TABLE host (id serial primary key, host_id text, switch text, port text);")
         #conn.commit()
         
         # Listen to dependencies
