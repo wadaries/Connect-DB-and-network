@@ -1,7 +1,7 @@
-"""
-This module monitors switch, link, and host status and store the network state into the database.
-To run, use ./pox.py pox.openflow.discovery pox.samples.pretty_log pox.forwarding.l3_learning pox.host_tracker db
-"""
+'''
+    This module monitors switch, link, and host status and store the network state into the psql database.
+    Call it with POX ./pox.py pox.openflow.discovery pox.samples.pretty_log pox.forwarding.l3_learning pox.host_tracker db'''
+
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
@@ -26,8 +26,8 @@ class db ():
         log.info("Connected to Database!\n")
         cursor.execute("CREATE TABLE link (id serial primary key, in_switch text, in_port text, out_switch text, out_port text);")
         cursor.execute("CREATE TABLE switch (id serial primary key, switch text, port text);")
-        cursor.execute("CREATE TABLE host (id serial primary key, host_id text, switch text, port text);")
-        
+        cursor.execute("CREATE TABLE host (id serial primary key, host text, switch text, port text);")
+
         
         # Listen to dependencies
         def startup ():
@@ -38,16 +38,19 @@ class db ():
     
     def _handle_LinkEvent (self, event):
         l = event.link
+        in_switch = dpid_to_str(l.dpid1)
+        in_port = str(l.port1)
+        out_switch = dpid_to_str(l.dpid2)
+        out_port = str(l.port2)
+        
         if event.removed:
             log.info("Link " + l.__repr__() + " Removed")
+            cursor.execute("DELETE FROM link WHERE (in_switch=%s AND in_port=%s AND out_switch=%s AND out_port=%s)",(in_switch,in_port,out_switch,out_port))
+        
         elif event.added:
             log.info("Link " + l.__repr__() + " Added")
-            log.info("Link1: " + str(l.dpid1) + " Port: " + str(l.port1))
-            log.info("Link2: " + str(l.dpid2) + " Port: " + str(l.port2))
-            in_switch = str(l.dpid1)
-            in_port = str(l.port1)
-            out_switch = str(l.dpid2)
-            out_port = str(l.port2)
+            #log.info("Link1: " + str(l.dpid1) + " Port: " + str(l.port1))
+            #log.info("Link2: " + str(l.dpid2) + " Port: " + str(l.port2))
             cursor.execute("INSERT INTO link (in_switch,in_port,out_switch,out_port) VALUES (%s,%s,%s,%s)",(in_switch,in_port,out_switch,out_port))
 
     '''def hubify (self, event):
@@ -59,27 +62,31 @@ class db ():
     #self.hubify(event) or call it with l2.learning'''
     
     def _handle_ConnectionUp (self, event):
-        s_dpid = str(event.dpid)
-        log.info("Switch Added: " + str(event.dpid))
+        s_dpid = dpid_to_str(event.dpid)
+        log.info("Switch Added: " + s_dpid)
         ports = event.connection.ports.__str__();
         log.info("Ports: " + ports)
         # Add all ports attached to this switch
         for val in event.connection.ports.itervalues():
             if "-eth" in val.name:
                 log.info("Port number: " + str(val.port_no))
+                port_no = str(val.port_no)
                 cursor.execute("INSERT INTO switch (switch,port) VALUES (%s,%s)",(s_dpid,val.port_no))
-                        conn.commit()
 
     def _handle_ConnectionDown (self, event):
-        log.info("Switch Deleted: " + str(event.dpid))
+        s_dpid = dpid_to_str(event.dpid)
+        log.info("Switch Deleted: " + s_dpid)
+        #cursor.execute("DELETE FROM switch WHERE switch="+s_dpid)
 
     
     def _handle_HostEvent (self, event):
-        dpid = event.entry.dpid
-        port = event.entry.port
-        macaddr = event.entry.macaddr
+        dpid = dpid_to_str(event.entry.dpid)
+        port = str(event.entry.port)
+        macaddr = str(event.entry.macaddr)
         if event.join:
             log.info("Host join: " + event.entry.__str__())
+            cursor.execute("INSERT INTO host (host,switch,port) VALUES (%s,%s,%s)",(macaddr,dpid,port))
+        
         if event.leave:
             log.info("Host leave: " + event.entry.__str__())
         if event.move:
