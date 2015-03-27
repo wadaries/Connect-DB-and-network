@@ -76,7 +76,7 @@ class db ():
     def _handle_ConnectionDown (self, event):
         s_dpid = dpid_to_str(event.dpid)
         log.info("Switch Deleted: " + s_dpid)
-        #cursor.execute("DELETE FROM switch WHERE switch="+s_dpid)
+        cursor.execute("DELETE FROM switch WHERE switch=%s",(s_dpid,))
 
     
     def _handle_HostEvent (self, event):
@@ -89,6 +89,8 @@ class db ():
         
         if event.leave:
             log.info("Host leave: " + event.entry.__str__())
+            cursor.execute("DELETE FROM host WHERE (host=%s AND switch=%s AND port=%s)",(macaddr,dpid,port))
+                
         if event.move:
             log.info("Host move: " + event.entry.__str__())
         
